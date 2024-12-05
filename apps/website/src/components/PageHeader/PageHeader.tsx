@@ -13,13 +13,7 @@ const UNDERLINES: {
       <stop offset='1' stopColor='#9229FF' />
     </>
   ),
-  stake: (
-    <>
-      <stop stopColor='#18A9FF' />
-      <stop offset='1' stopColor='#9229FF' />
-    </>
-  ),
-  packdraw: (
+  hypedrop: (
     <>
       <stop stopColor='#18A9FF' />
       <stop offset='1' stopColor='#9229FF' />
@@ -31,16 +25,22 @@ const UNDERLINES: {
       <stop offset='1' stopColor='#009E53' />
     </>
   ),
-  clash: (
-    <>
-      <stop stopColor='#FFC701' />
-      <stop offset='1' stopColor='#E78A00' />
-    </>
-  ),
   csgobig: (
     <>
       <stop stopColor='#E1B56F' />
       <stop offset='1' stopColor='#94713B' />
+    </>
+  ),
+  roobet: (
+    <>
+      <stop stopColor='#DDB43F' />
+      <stop offset='1' stopColor='#9B7C25' />
+    </>
+  ),
+  packdraw: (
+    <>
+      <stop stopColor='#18A9FF' />
+      <stop offset='1' stopColor='#9229FF' />
     </>
   )
 };

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Prisma, getAllLeaderboards } from 'database';
-import { LeaderboardType } from 'types';
+import { LeaderboardType, ThemedLeaderboard } from 'types';
 import Tilt from 'react-parallax-tilt';
 import Image from 'next/image';
 import clsx from 'clsx';
@@ -14,17 +14,15 @@ import PageHeader from '@/components/PageHeader/PageHeader';
 import Leaderboard from '@/components/leaderboard/Leaderboard/Leaderboard';
 import LeaderboardPodiumBox from '@/components/leaderboard/LeaderboardPodiumBox/LeaderboardPodiumBox';
 import CountdownTimer from '@/components/ui/CountdownTimer/CountdownTimer';
+import TabPillSwitch from '@/components/TabPillSwitch/TabPillSwitch';
 
 import { useTheme } from '@/hooks/theme';
 import { useCountdown } from '@/hooks/countdown';
 
 import classes from './leaderboards.module.scss';
 
-import gamdomLogo from '../../images/affiliate/gamdom.png';
-import stakeLogo from '../../images/affiliate/stake.png';
-import clashLogo from '../../images/affiliate/clash.png';
+import roobetLogo from '../../images/affiliate/roobet.png';
 import csgobigLogo from '../../images/affiliate/csgobig.png';
-import packDrawLogo from '../../images/affiliate/packdraw.png';
 
 export type ILeaderboard = Prisma.LeaderboardGetPayload<{
   include: { spots: true };
@@ -57,16 +55,12 @@ function Leaderboards({
   const [weeklyDays, weeklyHours, weeklyMinutes] = useCountdown(
     new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate())
   );
-  const [selectedLeaderboard, setSelectedLeaderboard] = useState<LeaderboardType>('clash');
+  const [selectedLeaderboard, setSelectedLeaderboard] = useState<ThemedLeaderboard>('roobet');
 
   useEffect(() => {
-    theme.setTheme('clash');
+    theme.setTheme('roobet');
   }, []);
   useEffect(() => {
-    if (selectedLeaderboard === 'stake' || selectedLeaderboard === 'packdraw') {
-      theme.setTheme('default');
-      return;
-    }
     theme.setTheme(selectedLeaderboard);
   }, [selectedLeaderboard]);
 
@@ -75,81 +69,40 @@ function Leaderboards({
       <div className={classes.root}>
         <PageHeader title='Leaderboards' />
 
-        <div className={classes.affiliates}>
-          <Image
-            src={clashLogo}
-            alt='Clash'
-            width={100}
-            height={60}
-            style={{
-              objectFit: 'contain'
+        <div className={classes.top}>
+          <TabPillSwitch
+            tabs={[
+              {
+                image: roobetLogo,
+                name: 'roobet'
+              },
+              {
+                image: csgobigLogo,
+                name: 'csgobig'
+              }
+            ]}
+            activeTab={selectedLeaderboard}
+            setActiveTab={(name: string) => {
+              setSelectedLeaderboard(name as ThemedLeaderboard);
             }}
-            onClick={() => {
-              setSelectedLeaderboard('clash');
-            }}
-            className={clsx(classes.affiliate, selectedLeaderboard === 'clash' && classes.selected)}
           />
-          <Image
-            src={csgobigLogo}
-            alt='CSGOBIG'
-            width={100}
-            height={60}
-            style={{
-              objectFit: 'contain'
-            }}
-            onClick={() => {
-              setSelectedLeaderboard('csgobig');
-            }}
-            className={clsx(
-              classes.affiliate,
-              selectedLeaderboard === 'csgobig' && classes.selected
-            )}
-          />
-          {/* <Image
-            src={stakeLogo}
-            alt='Stake'
-            width={100}
-            height={60}
-            style={{
-              objectFit: 'contain'
-            }}
-            onClick={() => {
-              setSelectedLeaderboard('stake');
-            }}
-            className={clsx(classes.affiliate, selectedLeaderboard === 'stake' && classes.selected)}
-          /> */}
-          <Image
-            src={packDrawLogo}
-            alt='PackDraw'
-            width={100}
-            height={60}
-            style={{
-              objectFit: 'contain'
-            }}
-            onClick={() => {
-              setSelectedLeaderboard('packdraw');
-            }}
-            className={clsx(
-              classes.affiliate,
-              selectedLeaderboard === 'packdraw' && classes.selected
-            )}
-          />
-          <Image
-            src={gamdomLogo}
-            alt='Gamdom'
-            width={100}
-            height={60}
-            style={{
-              objectFit: 'contain'
-            }}
-            onClick={() => {
-              setSelectedLeaderboard('gamdom');
-            }}
-            className={clsx(
-              classes.affiliate,
-              selectedLeaderboard === 'gamdom' && classes.selected
-            )}
-          />
+
+          {(selectedLeaderboard === 'roobet' || selectedLeaderboard === 'csgobig') && (
+            <p className={classes.leaderboardsPromo}>$10,000 LEADERBOARD</p>
+          )}
+
+          <p className={classes.codePromo}>
+            {selectedLeaderboard === 'csgobig' ? 'Deposit' : 'Wager'} Under Code{' '}
+            <span
+              className={clsx(
+                classes.code,
+                selectedLeaderboard === 'roobet' && classes.roobetText,
+                selectedLeaderboard === 'csgobig' && classes.csgobigText
+              )}
+            >
+              TCK
+            </span>
+          </p>
         </div>
 
         {leaderboards[selectedLeaderboard].spots.length === 0 && (
@@ -174,13 +127,7 @@ function Leaderboards({
                   <LeaderboardPodiumBox
                     leaderboardSpot={leaderboards[selectedLeaderboard].spots[1]}
                     position={2}
-                    rewardType={
-                      selectedLeaderboard === 'clash'
-                        ? 'clash'
-                        : selectedLeaderboard === 'csgobig'
-                        ? 'csgobig'
-                        : 'none'
-                    }
+                    rewardType={selectedLeaderboard}
                   />
                 </Tilt>
               )}
@@ -199,13 +146,7 @@ function Leaderboards({
                   <LeaderboardPodiumBox
                     leaderboardSpot={leaderboards[selectedLeaderboard].spots[0]}
                     position={1}
-                    rewardType={
-                      selectedLeaderboard === 'clash'
-                        ? 'clash'
-                        : selectedLeaderboard === 'csgobig'
-                        ? 'csgobig'
-                        : 'none'
-                    }
+                    rewardType={selectedLeaderboard}
                   />
                 </Tilt>
               )}
@@ -224,35 +165,31 @@ function Leaderboards({
                   <LeaderboardPodiumBox
                     leaderboardSpot={leaderboards[selectedLeaderboard].spots[2]}
                     position={3}
-                    rewardType={
-                      selectedLeaderboard === 'clash'
-                        ? 'clash'
-                        : selectedLeaderboard === 'csgobig'
-                        ? 'csgobig'
-                        : 'none'
-                    }
+                    rewardType={selectedLeaderboard}
                   />
                 </Tilt>
               )}
             </div>
 
             <div className={clsx(classes.timerWrapper, classes.hideOnMobile)}>
-              {selectedLeaderboard === 'clash' && (
-                <CountdownTimer days={monthlyDays} hours={monthlyHours} minutes={monthlyMinutes} />
-              )}
               {selectedLeaderboard === 'csgobig' && (
                 <CountdownTimer days={monthlyDays} hours={monthlyHours} minutes={monthlyMinutes} />
               )}
-              {(selectedLeaderboard === 'stake' || selectedLeaderboard === 'gamdom') && (
+              {selectedLeaderboard === 'roobet' && (
                 <CountdownTimer days={monthlyDays} hours={monthlyHours} minutes={monthlyMinutes} />
-              )}
-              {selectedLeaderboard === 'packdraw' && (
-                <CountdownTimer days={weeklyDays} hours={weeklyHours} minutes={weeklyMinutes} />
               )}
             </div>
 
-            {leaderboards[selectedLeaderboard].spots.length > 3 && (
+            {leaderboards[selectedLeaderboard].spots.length && (
               <Leaderboard leaderboard={leaderboards[selectedLeaderboard]} />
+            )}
+
+            {selectedLeaderboard === 'roobet' && (
+              <p className={classes.disclaimer}>
+                Any table game wager abuse that Roobet detects is subject to disqualification. For
+                example: $5-$100 wager per Blackjack hand and throughout the leaderboard the user
+                performed 100,000+ bets, opposite betting on roulette/baccarat, etc.
+              </p>
             )}
           </>
         )}

@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+
+import { useEffect } from 'react';
 import Image from 'next/image';
 import { faAngleRight } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/router';
@@ -7,24 +10,34 @@ import Layout from '@/components/Layout/Layout';
 import JaggedBackgroundItem from '@/components/JaggedBackgroundItem/JaggedBackgroundItem';
 import Button from '@/components/ui/Button/Button';
 import AffiliateBoxCodeBox from '@/components/AffiliateBoxCodeBox/AffiliateBoxCodeBox';
-import StakeFormBox from '@/components/StakeFormBox/StakeFormBox';
+import RoobetFormBox from '@/components/RoobetFormBox/RoobetFormBox';
 
-import stakeDemo from '@/images/affiliate/stake/demo.png';
+import roobetDemo from '@/images/affiliate/roobet/demo.png';
+import roobetRedeem from '@/images/affiliate/roobet/redeem.png';
 
-import classes from './stake.module.scss';
+import { useTheme } from '@/hooks/theme';
 
-function OfferStake() {
+import classes from './reloads.module.scss';
+
+function OfferRoobet() {
   const router = useRouter();
+  const theme = useTheme();
+
+  useEffect(() => {
+    theme.setTheme('roobet');
+  }, []);
 
   return (
-    <Layout title='$14 Stake Reload'>
+    <Layout title='$15 Roobet Reload'>
       <div className={classes.header}>
-        <JaggedBackgroundItem fill='#252567'>
-          <p className={classes.jaggedText}>Stake Exclusive</p>
+        <JaggedBackgroundItem fill='#52431d'>
+          <p className={classes.jaggedText}>Roobet Exclusive</p>
         </JaggedBackgroundItem>
         <div className={classes.heroContent}>
-          <p className={classes.title}>$14 Reload</p>
-          <p className={classes.subtitle}>This reward is available for 7 Days upon redemption.</p>
+          <p className={classes.title}>$15 Reload - Deposit $15, Earn $15</p>
+          <p className={classes.subtitle}>
+            This reward is available for seven days upon redemption.
+          </p>
         </div>
       </div>
 
@@ -32,13 +45,7 @@ function OfferStake() {
         <div className={classes.stakeSection}>
           <div className={classes.stakeSectionLeft}>
             <div>
-              <p className={classes.title}>
-                Visit Stake<span className={classes.dotCom}>.com</span>
-              </p>
-              <p className={classes.subtitle15}>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                incididunt ut labore et dolore magna aliqua.
-              </p>
+              <p className={classes.urlTitle}>Visit Roobet.com</p>
             </div>
             <div className={classes.stakeSectionLeftBottom}>
               <div
@@ -50,11 +57,11 @@ function OfferStake() {
                 <AffiliateBoxCodeBox fill='#161623'>TCK</AffiliateBoxCodeBox>
               </div>
               <Button
-                background='linear-gradient(90deg, #6B6AF2 0%, #3F419B 100%)'
+                background='linear-gradient(90deg, #DDB43F 0%, #9B7C25 100%)'
                 rightIcon={faAngleRight}
                 width={265}
                 onClick={() => {
-                  window.open('https://stake.com/?c=TCK', '_blank');
+                  window.open('https://roobet.com/?ref=TCK', '_blank');
                 }}
               >
                 Register Instantly
@@ -63,15 +70,19 @@ function OfferStake() {
           </div>
           <div className={classes.stakeSectionRight}>
             <Image
-              src={stakeDemo}
-              alt='Stake Demo'
-              width={650}
+              src={roobetDemo}
+              alt='Roobet Demo'
+              width={640}
               className={classes.stakeDemoImage}
             />
           </div>
         </div>
 
-        <StakeFormBox />
+        <div className={classes.redeemWrapper}>
+          <Image src={roobetRedeem} alt='Roobet Redeem' className={classes.redeemImage} />
+        </div>
+
+        <RoobetFormBox />
 
         <div className={classes.enjoySection}>
           <svg
@@ -101,7 +112,7 @@ function OfferStake() {
           <div className={classes.enjoySectionTop}>
             <p className={clsx(classes.title, classes.center)}>Enjoy your Bonus</p>
             <p className={clsx(classes.subtitle15, classes.center)}>
-              Give stake 24-48 hours (might take longer on weekends) to check your account and if
+              Give Roobet 24-48 hours (might take longer on weekends) to check your account and if
               eligible.
             </p>
           </div>
@@ -119,4 +130,4 @@ function OfferStake() {
   );
 }
 
-export default OfferStake;
+export default OfferRoobet;

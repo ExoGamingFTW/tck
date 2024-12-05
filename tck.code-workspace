@@ -20,6 +20,10 @@
 			"path": "packages/database"
 		},
 		{
+			"name": "kick-bot",
+			"path": "apps/kick-bot"
+		},
+		{
 			"name": "startup",
 			"path": "apps/startup"
 		},
@@ -41,7 +45,7 @@
 		}
 	],
 	"settings": {
-		"discord.enabled": true,
+		"discord.enabled": false,
 		"files.exclude": {
 			// "**/.next": true,
 			// "**/.turbo": true,

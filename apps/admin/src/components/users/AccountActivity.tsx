@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
-import { Table } from '@mantine/core';
+import { Checkbox, Table } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { UserAction } from 'database';
@@ -23,7 +23,9 @@ function getUrl() {
 function AccountActivity({ username }: { username: string }) {
   const [cookie, setCookie] = useCookies(['authorization']);
 
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [rows, setRows] = useState<JSX.Element[]>([]);
+  const [shouldShowLogins, setShouldShowLogins] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
@@ -39,33 +41,54 @@ function AccountActivity({ username }: { username: string }) {
       const fetched = response.data;
       if (fetched.length > 0) {
         setRows(
-          fetched.map((action: UserAction) => {
-            return (
-              <tr key={action.id}>
-                <td>{dateformat(action.timestamp, 'yyyy-mm-dd, HH:MM:ss')}</td>
-                <td>{action.action}</td>
-                <td>{action.ip}</td>
-                <td>{action.description}</td>
-              </tr>
-            );
-          })
+          fetched
+            .filter((action: UserAction) => {
+              if (shouldShowLogins) {
+                return true;
+              }
+              return action.action !== 'ACCOUNT_LOGIN';
+            })
+            .map((action: UserAction) => {
+              return (
+                <tr key={action.id}>
+                  <td>{dateformat(action.timestamp, 'yyyy-mm-dd, HH:MM:ss')}</td>
+                  <td>{action.action}</td>
+                  <td>{action.ip}</td>
+                  <td>{action.description}</td>
+                </tr>
+              );
+            })
         );
       }
-    })();
-  }, [username]);
 
-  return (
-    <Table>
-      <thead>
-        <tr>
-          <th>Timestamp</th>
-          <th>Activity</th>
-          <th>IP</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>{rows}</tbody>
-    </Table>
+      setIsLoading(false);
+    })();
+  }, [username, shouldShowLogins]);
+
+  return !isLoading ? (
+    <>
+      <Checkbox
+        label='Show logins'
+        checked={shouldShowLogins}
+        onChange={(event) => {
+          setShouldShowLogins(event.currentTarget.checked);
+        }}
+        mb='sm'
+      />
+      <Table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Activity</th>
+            <th>IP</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </Table>
+    </>
+  ) : (
+    <p>Loading...</p>
   );
 }
 

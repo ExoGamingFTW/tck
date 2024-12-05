@@ -10,6 +10,7 @@ import {
   Input,
   Menu,
   Modal,
+  NumberInput,
   Pagination,
   Paper,
   ScrollArea,
@@ -22,7 +23,7 @@ import {
   TransferListData
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { Permission, User, UserAccounts, UserAction, getAllUsers } from 'database';
+import { Permission, User, getAllUsers } from 'database';
 import dateformat from 'dateformat';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
@@ -36,16 +37,20 @@ import {
   IconSend,
   IconTrash,
   IconX,
-  IconCheck
+  IconCheck,
+  IconLink,
+  IconWallet
 } from '@tabler/icons-react';
 import axios from 'axios';
 import { useCookies } from 'react-cookie';
 import { notifications } from '@mantine/notifications';
 
-import { usePermissions } from '@/hooks/permissions';
-
 import Layout from '@/components/Layout';
 import AccountActivity from '@/components/users/AccountActivity';
+import AccountConnections from '@/components/users/AccountConnections';
+import AccountWallet from '@/components/users/AccountWallet';
+
+import { usePermissions } from '@/hooks/permissions';
 
 function getUrl() {
   if (process.env.NODE_ENV === 'production') {
@@ -66,10 +71,31 @@ export async function getServerSideProps() {
   return {
     props: {
       users: users.map((user) => {
+        const createAction = user.actions.find((action) => {
+          return action.action === 'ACCOUNT_CREATE';
+        });
+        const lastActiveAction = user.actions
+          .filter((action) => {
+            return action.action === 'ACCOUNT_LOGIN';
+          })
+          .sort((a, b) => {
+            return b.timestamp - a.timestamp;
+          })[0];
+
+        const joined = createAction
+          ? dateformat(createAction?.timestamp, 'yyyy-mm-dd, HH:MM:ss')
+          : 'Unknown';
+        const lastActive = lastActiveAction
+          ? dateformat(lastActiveAction?.timestamp, 'yyyy-mm-dd, HH:MM:ss')
+          : 'Unknown';
+
         return {
           ...user,
           apiKey: null,
-          password: null
+          password: null,
+          actions: null,
+          joined,
+          lastActive
         };
       })
     }
@@ -83,8 +109,8 @@ type IUser = Omit<
     password: string;
   }
 > & {
-  accounts: UserAccounts | null;
-  actions: UserAction[];
+  joined: string;
+  lastActive: string;
 };
 
 function filterBySearch(users: IUser[], search: string) {
@@ -93,10 +119,7 @@ function filterBySearch(users: IUser[], search: string) {
       user.username.toLowerCase().includes(search.toLowerCase()) ||
       user.email.includes(search) ||
       user.displayName.toLowerCase().includes(search.toLowerCase()) ||
-      user.id.includes(search) ||
-      user.accounts?.discord?.includes(search) ||
-      user.accounts?.kick?.includes(search) ||
-      user.accounts?.twitch?.includes(search)
+      user.id.includes(search)
     );
   });
 }
@@ -190,6 +213,16 @@ function Users({ users }: { users: IUser[] }) {
     useDisclosure(false);
 
   const [isDeleteModalOpen, { open: openDeleteModal, close: closeDeleteModal }] =
+    useDisclosure(false);
+
+  const [points, setPoints] = useState<number>(0);
+  const [isPointsModalOpen, { open: openPointsModal, close: closePointsModal }] =
+    useDisclosure(false);
+
+  const [isConnectionsModalOpen, { open: openConnectionsModal, close: closeConnectionsModal }] =
+    useDisclosure(false);
+
+  const [isWalletModalOpen, { open: openWalletModal, close: closeWalletModal }] =
     useDisclosure(false);
 
   useEffect(() => {
@@ -306,7 +339,7 @@ function Users({ users }: { users: IUser[] }) {
 
   useEffect(() => {
     setPage(1);
-  }, [tab, search]);
+  }, [tab, banTab, search]);
 
   useEffect(() => {
     (async () => {
@@ -468,6 +501,44 @@ function Users({ users }: { users: IUser[] }) {
     setDisabled(false);
   }
 
+  async function updatePoints() {
+    setDisabled(true);
+
+    const response = await axios.post(
+      `${getUrl()}/api/v1/user/points/set`,
+      {
+        userId: selectedUser?.id,
+        points
+      },
+      {
+        headers: {
+          authorization: cookie.authorization
+        },
+        validateStatus: () => {
+          return true;
+        }
+      }
+    );
+
+    if (response.status === 200) {
+      closePointsModal();
+      setDisabled(false);
+      router.replace(router.asPath);
+
+      notifications.show({
+        title: 'Success',
+        message: `Points for ${selectedUser?.username || 'Unknown'} have been updated.`,
+        color: 'teal',
+        icon: <IconCheck />,
+        withBorder: true,
+        autoClose: 10000
+      });
+    }
+
+    showErrorNotification(response.status);
+    setDisabled(false);
+  }
+
   return (
     <Layout>
       {permissions.permissions.includes('MANAGE_USERS') ? (
@@ -608,27 +679,38 @@ function Users({ users }: { users: IUser[] }) {
                                 </Menu>
                               </div>
                             </td>
-                            <td>{user.points}</td>
                             <td>
-                              {dateformat(
-                                user.actions.find((action) => {
-                                  return action.action === 'ACCOUNT_CREATE';
-                                })?.timestamp,
-                                'yyyy-mm-dd, HH:MM:ss'
-                              )}
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                              >
+                                {user.points}
+                                {permissions.permissions.includes('USER_POINTS_SET') && (
+                                  <Menu
+                                    transitionProps={{ transition: 'pop' }}
+                                    withArrow
+                                    position='bottom-end'
+                                    withinPortal
+                                  >
+                                    <Menu.Target>
+                                      <ActionIcon
+                                        onClick={() => {
+                                          setSelectedUser(user);
+                                          setPoints(user.points);
+                                          openPointsModal();
+                                        }}
+                                      >
+                                        <IconPencil size='1rem' stroke={1.5} />
+                                      </ActionIcon>
+                                    </Menu.Target>
+                                  </Menu>
+                                )}
+                              </div>
                             </td>
-                            <td>
-                              {dateformat(
-                                user.actions
-                                  .filter((action) => {
-                                    return action.action === 'ACCOUNT_LOGIN';
-                                  })
-                                  .sort((a, b) => {
-                                    return b.timestamp - a.timestamp;
-                                  })[0]?.timestamp,
-                                'yyyy-mm-dd, HH:MM:ss'
-                              )}
-                            </td>
+                            <td>{user.joined}</td>
+                            <td>{user.lastActive}</td>
                             {permissions.permissions.includes('USER_VIEW_ACTIVITY') && (
                               <td>
                                 <Anchor
@@ -670,6 +752,28 @@ function Users({ users }: { users: IUser[] }) {
                                         }}
                                       >
                                         Change Permissions
+                                      </Menu.Item>
+                                    )}
+                                    {permissions.permissions.includes('USER_VIEW_CONNECTIONS') && (
+                                      <Menu.Item
+                                        icon={<IconLink size='1rem' stroke={1.5} />}
+                                        onClick={() => {
+                                          openConnectionsModal();
+                                          setSelectedUser(user);
+                                        }}
+                                      >
+                                        View Connections
+                                      </Menu.Item>
+                                    )}
+                                    {permissions.permissions.includes('USER_VIEW_WALLET') && (
+                                      <Menu.Item
+                                        icon={<IconWallet size='1rem' stroke={1.5} />}
+                                        onClick={() => {
+                                          openWalletModal();
+                                          setSelectedUser(user);
+                                        }}
+                                      >
+                                        View Wallet
                                       </Menu.Item>
                                     )}
                                     {user.isBanned
@@ -817,6 +921,49 @@ function Users({ users }: { users: IUser[] }) {
                 Delete
               </Button>
             </Group>
+          </Modal>
+
+          <Modal
+            opened={isPointsModalOpen}
+            onClose={closePointsModal}
+            title={`Edit Points for ${selectedUser?.username || 'Unknown'}`}
+            centered
+          >
+            <NumberInput
+              label='Points'
+              placeholder='Points'
+              value={points}
+              type='number'
+              onChange={(value) => {
+                setPoints(value || 0);
+              }}
+            />
+            <Group position='right' mt='md' grow>
+              <Button onClick={closePointsModal} variant='outline'>
+                Cancel
+              </Button>
+              <Button onClick={updatePoints} disabled={disabled}>
+                Update
+              </Button>
+            </Group>
+          </Modal>
+
+          <Modal
+            opened={isConnectionsModalOpen}
+            onClose={closeConnectionsModal}
+            title={`Connections for ${selectedUser?.username || 'Unknown'}`}
+            centered
+          >
+            <AccountConnections username={selectedUser?.username || 'Unknown'} />
+          </Modal>
+
+          <Modal
+            opened={isWalletModalOpen}
+            onClose={closeWalletModal}
+            title={`Wallet for ${selectedUser?.username || 'Unknown'}`}
+            centered
+          >
+            <AccountWallet username={selectedUser?.username || 'Unknown'} />
           </Modal>
         </>
       ) : (

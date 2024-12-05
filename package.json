@@ -7,11 +7,15 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "dotenv -e ./.env.development -- turbo run dev --parallel",
+    "predev": "dotenv -- turbo run db:generate",
+    "dev": "dotenv -- turbo run dev --parallel",
+    "prebuild": "dotenv -- turbo run db:generate",
     "build": "dotenv -- turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test --concurrency=1",
-    "start": "dotenv -- turbo run start"
+    "start": "dotenv -- turbo run start",
+    "gource": "gource --user-image-dir ./avatar -1280x720 --seconds-per-day 0.25",
+    "sloc": "node sloc"
   },
   "devDependencies": {
     "dotenv-cli": "^7.2.1",
@@ -19,5 +23,9 @@
     "prettier": "^2.8.8",
     "turbo": "^1.10.2"
   },
-  "packageManager": "npm@8.1.4"
+  "packageManager": "npm@8.1.4",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "node-sloc": "^0.2.1"
+  }
 }

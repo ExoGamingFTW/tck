@@ -24,10 +24,18 @@ function StakeFormBox() {
 
     setDisabled(true);
 
-    const response = await axios.post('/api/v1/collection/stake', {
-      stakeUsername: stakeUsername.trim(),
-      discordUsername: discordUsername.trim()
-    });
+    const response = await axios.post(
+      '/api/v1/collection/stake',
+      {
+        stakeUsername: stakeUsername.trim(),
+        discordUsername: discordUsername.trim()
+      },
+      {
+        validateStatus: () => {
+          return true;
+        }
+      }
+    );
 
     if (response.status === 201) {
       setStakeUsername('');
@@ -47,12 +55,10 @@ function StakeFormBox() {
         <div className={classes.leftInfo}>
           <p className={classes.title}>Submit your Info</p>
           <p className={classes.description}>
-            Submit your info here for Stake to give you your Reload exclusively with TCK.gg
+            Submit your info here for Stake to give you your Reload exclusively with TCK.gg.
           </p>
         </div>
         <svg
-          // width='584'
-          // height='152'
           viewBox='0 0 584 152'
           fill='none'
           xmlns='http://www.w3.org/2000/svg'
@@ -494,8 +500,7 @@ function StakeFormBox() {
         <div className={classes.rightInfo}>
           <p className={classes.title}>Submit your Info</p>
           <p className={classes.description}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-            incididunt ut labore et dolore magna aliqua.
+            Submit your info here for Stake to give you your Reload exclusively with TCK.gg.
           </p>
         </div>
         <div className={classes.formInputs}>

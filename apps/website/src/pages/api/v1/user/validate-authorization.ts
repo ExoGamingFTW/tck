@@ -13,7 +13,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const ip = getIp(req);
 
-  const data: { authorization: string } = req.body;
+  const data: { authorization: string; note: string | undefined } = req.body;
   const isValid = await validateAuthorization(data.authorization);
   if (!isValid) {
     res.status(401).end();
@@ -37,7 +37,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         create: {
           action: Action.ACCOUNT_LOGIN,
           ip,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          description: data.note || undefined
         }
       }
     }

@@ -17,7 +17,8 @@ import {
   IconGift,
   IconHome,
   IconMedal,
-  IconUsers
+  IconUsers,
+  IconDevicesPc
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -90,15 +91,16 @@ const SIDEBAR_DATA: {
 }[] = [
   { link: '/', label: 'Home', icon: IconHome },
   { link: '/users', label: 'Users', icon: IconUsers, permission: 'MANAGE_USERS' },
+  { link: '/raffles', label: 'Raffles', icon: IconDice5, permission: 'MANAGE_RAFFLES' },
+  { link: '/giveaways', label: 'Giveaways', icon: IconGift, permission: 'MANAGE_GIVEAWAYS' },
+  { link: '/reloads', label: 'Reloads', icon: IconGift, permission: 'MANAGE_RELOADS' },
   {
-    link: '/leaderboard',
-    label: 'Leaderboard',
+    link: '/leaderboards',
+    label: 'Leaderboards',
     icon: IconMedal,
     permission: 'MANAGE_LEADERBOARDS'
   },
-  { link: '/raffles', label: 'Raffles', icon: IconDice5, permission: 'MANAGE_RAFFLES' },
-  { link: '/giveaways', label: 'Giveaways', icon: IconGift, permission: 'MANAGE_GIVEAWAYS' },
-  { link: '/reloads', label: 'Reloads', icon: IconGift, permission: 'MANAGE_RELOADS' }
+  { link: '/ips', label: 'IPs', icon: IconDevicesPc, permission: 'MANAGE_IPS' }
 ];
 
 function Layout({ title, children }: { title?: string; children: React.ReactNode }) {

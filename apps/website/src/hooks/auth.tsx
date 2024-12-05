@@ -1,9 +1,21 @@
 import { useState, useContext, createContext } from 'react';
 import axios, { AxiosResponse } from 'axios';
 import { useCookies } from 'react-cookie';
-import { User } from 'database';
+import { Prisma } from 'database';
 
-type SafeUser = Omit<User, 'password'>;
+export type IUser = Prisma.UserGetPayload<{
+  include: {
+    accounts: {
+      include: {
+        discord: true;
+        kick: true;
+      };
+    };
+    wallets: true;
+    kickVerification: true;
+  };
+}>;
+type SafeUser = Omit<IUser, 'password'>;
 
 // Context
 const AuthContext = createContext(null as any);
@@ -14,6 +26,7 @@ export function useAuth(): {
   setNewUser: (user: SafeUser) => void;
   login: (email: string, password: string) => Promise<SafeUser | null>;
   logOut: () => void;
+  refresh: () => void;
 } {
   return useContext(AuthContext);
 }
@@ -41,6 +54,7 @@ function useProvideAuth() {
 
     const fetchedUser = response.data.user;
     setUser(fetchedUser);
+
     return fetchedUser;
   }
 
@@ -55,11 +69,21 @@ function useProvideAuth() {
     });
   }
 
+  async function refresh() {
+    const response = await axios.get('/api/v1/user/refresh', {
+      headers: {
+        authorization: cookie.authorization
+      }
+    });
+    setUser(response.data.user);
+  }
+
   return {
     setNewUser,
     user,
     login,
-    logOut
+    logOut,
+    refresh
   };
 }
 

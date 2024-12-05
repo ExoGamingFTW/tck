@@ -4,54 +4,9 @@ import { Action } from '@prisma/client';
 import { isValidEmail } from 'custom-util';
 import { v4 as uuidv4 } from 'uuid';
 
-import { prisma } from '../client';
-import { sendEmail } from '../email';
-
-/**
- * Gets a user from the database by their UUID.
- * @param id The UUID of the user.
- * @returns The user, `null` if the user doesn't exist.
- */
-export async function getUserById(id: string) {
-  return await prisma.user.findUnique({ where: { id } });
-}
-
-/**
- * Gets a user from the database by their username.
- * @param username The username to get the user for.
- * @returns The user, `null` if the user doesn't exist.
- */
-export async function getUserByUsername(username: string) {
-  return await prisma.user.findUnique({ where: { username } });
-}
-
-/**
- * Gets a user from the database by their email.
- * @param email The email to look for.
- * @returns The user, `null` if the user doesn't exist.
- */
-export async function getUserByEmail(email: string) {
-  return (
-    await prisma.user.findMany({
-      where: {
-        email: {
-          equals: email,
-          // Backwards compatibility.
-          mode: 'insensitive'
-        }
-      }
-    })
-  )[0];
-}
-
-/**
- * Gets a user from the database by their authorization/API key.
- * @param authorization The user's API key/authorization.
- * @returns The user, `null` if the user doesn't exist.
- */
-export async function getUserByAuthorization(authorization: string) {
-  return await prisma.user.findUnique({ where: { apiKey: authorization } });
-}
+import { prisma } from '../../client';
+import { sendEmail } from '../../email';
+import { getUserByEmail, getUserById, getUserByUsername } from './fetch';
 
 /**
  * Tries to create a user and add it to the database. Checks if there is an existing user with the username and email provided.
@@ -109,7 +64,12 @@ export async function createUser(
       accounts: {
         create: {
           twitch: null,
-          discord: null
+          discord: {
+            create: undefined
+          },
+          kick: {
+            create: undefined
+          }
         }
       }
     }
@@ -176,25 +136,93 @@ export async function getActivity(username: string) {
   return actions;
 }
 
-export async function banUser(userId: string) {
+export async function banUser(targetId: string, moderator: string, ip: string) {
   await prisma.user.update({
-    where: { id: userId },
+    where: { id: targetId },
     data: {
       isBanned: true
     }
   });
-}
 
-export async function unbanUser(userId: string) {
-  await prisma.user.update({
-    where: { id: userId },
+  // Add user action for target.
+  await prisma.userAction.create({
     data: {
-      isBanned: false
+      user: {
+        connect: {
+          id: targetId
+        }
+      },
+      action: Action.ACCOUNT_BAN,
+      timestamp: Date.now(),
+      description: `Account banned by ${moderator}.`
+    }
+  });
+
+  const target = await getUserById(targetId);
+  if (!target) {
+    return;
+  }
+
+  // Add user action for moderator.
+  await prisma.userAction.create({
+    data: {
+      user: {
+        connect: {
+          username: moderator
+        }
+      },
+      action: Action.ACCOUNT_BAN,
+      ip,
+      timestamp: Date.now(),
+      description: `Banned ${target.username}.`
     }
   });
 }
 
-export async function deleteUser(userId: string) {
+export async function unbanUser(targetId: string, moderator: string, ip: string) {
+  await prisma.user.update({
+    where: { id: targetId },
+    data: {
+      isBanned: false
+    }
+  });
+
+  // Add user action for target.
+  await prisma.userAction.create({
+    data: {
+      user: {
+        connect: {
+          id: targetId
+        }
+      },
+      action: Action.ACCOUNT_BAN,
+      timestamp: Date.now(),
+      description: `Account unbanned by ${moderator}.`
+    }
+  });
+
+  const target = await getUserById(targetId);
+  if (!target) {
+    return;
+  }
+
+  // Add user action for moderator.
+  await prisma.userAction.create({
+    data: {
+      user: {
+        connect: {
+          username: moderator
+        }
+      },
+      action: Action.ACCOUNT_BAN,
+      ip,
+      timestamp: Date.now(),
+      description: `Unbanned ${target.username}.`
+    }
+  });
+}
+
+export async function deleteUser(userId: string, ip: string) {
   const user = await getUserById(userId);
 
   if (!user) {
@@ -225,7 +253,8 @@ export async function deleteUser(userId: string) {
         create: {
           action: Action.ACCOUNT_DELETE,
           ip: '',
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          description: 'Account has been deleted by user.'
         }
       },
       points: 0,
@@ -247,4 +276,63 @@ export async function deleteUser(userId: string) {
   });
 
   return true;
+}
+
+export async function getConnections(username: string) {
+  const accounts = {
+    kick: '',
+    discord: '',
+    roobet: ''
+  };
+
+  const user = await getUserByUsername(username);
+  if (!user) {
+    return accounts;
+  }
+
+  const fetchedAccounts = await prisma.userAccounts.findFirst({
+    where: { userId: user.id },
+    include: {
+      kick: true,
+      discord: true
+    }
+  });
+
+  if (!fetchedAccounts) {
+    return accounts;
+  }
+
+  accounts.kick = fetchedAccounts.kick?.kickUsername || '';
+  accounts.discord = fetchedAccounts.discord?.discordUsername || '';
+  accounts.roobet = fetchedAccounts.roobet || '';
+
+  return accounts;
+}
+
+export async function getWallet(username: string) {
+  const wallet = {
+    bitcoin: '',
+    ethereum: '',
+    litecoin: '',
+    steamTradeUrl: ''
+  };
+
+  const user = await getUserByUsername(username);
+  if (!user) {
+    return wallet;
+  }
+
+  const fetchedWallet = await prisma.userWallets.findFirst({
+    where: { userId: user.id }
+  });
+  if (!fetchedWallet) {
+    return wallet;
+  }
+
+  wallet.bitcoin = fetchedWallet.bitcoin || '';
+  wallet.ethereum = fetchedWallet.ethereum || '';
+  wallet.litecoin = fetchedWallet.litecoin || '';
+  wallet.steamTradeUrl = fetchedWallet.steamTradeUrl || '';
+
+  return wallet;
 }

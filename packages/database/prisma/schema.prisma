@@ -13,21 +13,39 @@ enum Action {
   ACCOUNT_DELETE
   ACCOUNT_UNBAN
   ACCOUNT_LOGIN
+  CREATE_KICK_RAFFLE
+  GIVEAWAY_CREATE
+  GIVEAWAY_DELETE
+  GIVEAWAY_UPDATE
   GIVEAWAY_JOIN
+  JOIN_KICK_RAFFLE
+  LINK_KICK
+  LINK_DISCORD
+  UPDATE_KICK
+  USER_POINTS_ADD
+  USER_POINTS_REMOVE
+  USER_POINTS_SET
 }
 
 enum Permission {
   ACCESS_ADMIN_PANEL
+  CREATE_KICK_RAFFLE
   MANAGE_USERS
   MANAGE_LEADERBOARDS
   MANAGE_RAFFLES
   MANAGE_GIVEAWAYS
+  MANAGE_IPS
   MANAGE_RELOADS
   USER_BAN
   USER_DELETE
   USER_UNBAN
   USER_MODIFY_PERMISSIONS
+  USER_POINTS_ADD
+  USER_POINTS_REMOVE
+  USER_POINTS_SET
   USER_VIEW_ACTIVITY
+  USER_VIEW_CONNECTIONS
+  USER_VIEW_WALLET
 }
 
 model UserAction {
@@ -36,19 +54,57 @@ model UserAction {
   userId String @unique @db.ObjectId
 
   action      Action
-  ip          String
+  ip          String?
   timestamp   Int
   description String?
 }
 
+model KickAccount {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userAccount   UserAccounts @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  userAccountId String       @unique @db.ObjectId
+
+  kickId       Int    @unique
+  kickUsername String @unique
+}
+
+model DiscordAccount {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userAccount   UserAccounts @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  userAccountId String       @unique @db.ObjectId
+
+  discordId String @unique
+  discordUsername String @unique
+  discordAvatar String @unique
+  discordEmail String @unique
+}
+
 model UserAccounts {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @db.ObjectId
+
+  kick   KickAccount?
+  discord DiscordAccount?
+
+  csgobig String?
+  gamdom  String?
+  roobet  String?
+  twitch  String?
+}
+
+model UserWallets {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @unique @db.ObjectId
 
-  twitch  String?
-  discord String?
-  kick    String?
+  bitcoin       String?
+  ethereum      String?
+  litecoin      String?
+  steamTradeUrl String?
 }
 
 model User {
@@ -59,6 +115,7 @@ model User {
   apiKey   String @unique
 
   accounts    UserAccounts?
+  wallets     UserWallets?
   displayName String
   isAnonymous Boolean       @default(false)
 
@@ -76,6 +133,10 @@ model User {
   accountVerification AccountVerification?
 
   isDeleted Boolean @default(false)
+
+  kickVerification KickVerification?
+
+  createdKickRaffles KickRaffle[]
 }
 
 model BannedIp {
@@ -135,6 +196,14 @@ model StakeReloadEntry {
   discordUsername String
 }
 
+model RoobetReloadEntry {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  timestamp Int
+
+  roobetUsername   String
+  discordUsername String
+}
+
 model AccountVerification {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
@@ -142,4 +211,28 @@ model AccountVerification {
   userId String @unique @db.ObjectId
 
   uuid String
+}
+
+model KickVerification {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @db.ObjectId
+
+  verificationCode String
+
+  timestamp Int
+}
+
+model KickRaffle {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  duration Int
+  reward   Int
+  entries  Int[]
+
+  creator   User   @relation(fields: [creatorId], references: [id])
+  creatorId String @db.ObjectId
+
+  timestamp Int
 }

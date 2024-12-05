@@ -1,0 +1,21 @@
+.name {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: normal;
+
+  display: flex;
+  gap: 6px;
+}
+
+.description {
+  color: #999DA0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}

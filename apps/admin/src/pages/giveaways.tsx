@@ -20,10 +20,11 @@ import { useDisclosure } from '@mantine/hooks';
 import { DateTimePicker } from '@mantine/dates';
 import { getAllGiveaways } from 'database';
 import axios from 'axios';
-import { IGiveaway, ISafeGiveaway } from 'types';
+import { ISafeGiveaway } from 'types';
 import { Dropzone, FileWithPath, MIME_TYPES } from '@mantine/dropzone';
 import dateFormat from 'dateformat';
 import { notifications } from '@mantine/notifications';
+import { useCookies } from 'react-cookie';
 
 import { usePermissions } from '@/hooks/permissions';
 
@@ -34,22 +35,7 @@ export async function getServerSideProps() {
 
   return {
     props: {
-      giveaways: {
-        currentGiveaways: giveaways.currentGiveaways.map((giveaway) => {
-          return {
-            ...giveaway,
-            entries: giveaway.entries.length,
-            winner: null
-          };
-        }),
-        pastGiveaways: giveaways.pastGiveaways.map((giveaway) => {
-          return {
-            ...giveaway,
-            entries: giveaway.entries.length,
-            winner: giveaway.winner?.username || 'Unknown'
-          };
-        })
-      }
+      giveaways
     }
   };
 }
@@ -67,6 +53,51 @@ function getUrl() {
   return '';
 }
 
+function showErrorNotification(status: number) {
+  if (status === 400) {
+    notifications.show({
+      title: 'Bad Request',
+      message: 'Try again.',
+      color: 'red',
+      icon: <IconX />,
+      withBorder: true,
+      autoClose: 10000
+    });
+  }
+  if (status === 401 || status === 403) {
+    notifications.show({
+      title: 'Error',
+      message: 'You are not authorized to do this. Ask the developer for permission.',
+      color: 'red',
+      icon: <IconX />,
+      withBorder: true,
+      autoClose: 10000
+    });
+    return;
+  }
+  if (status === 404) {
+    notifications.show({
+      title: 'Error',
+      message: 'Giveaway not found. Notify the developer.',
+      color: 'red',
+      icon: <IconX />,
+      withBorder: true,
+      autoClose: 10000
+    });
+    return;
+  }
+  if (status === 500) {
+    notifications.show({
+      title: 'Internal Server Error',
+      message: 'An internal server error occurred.',
+      color: 'red',
+      icon: <IconX />,
+      withBorder: true,
+      autoClose: 10000
+    });
+  }
+}
+
 function Giveaways({
   giveaways
 }: {
@@ -81,6 +112,7 @@ function Giveaways({
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const router = useRouter();
   const permissions = usePermissions();
+  const [cookie, setCookie] = useCookies(['authorization']);
 
   const [disabled, setDisabled] = useState(false);
 
@@ -155,6 +187,9 @@ function Giveaways({
           image: Buffer.from(await images[0].arrayBuffer()).toString('base64')
         },
         {
+          headers: {
+            authorization: cookie.authorization
+          },
           validateStatus: () => {
             return true;
           }
@@ -172,6 +207,9 @@ function Giveaways({
           timestampEnd: endDate.getTime()
         },
         {
+          headers: {
+            authorization: cookie.authorization
+          },
           validateStatus: () => {
             return true;
           }
@@ -179,17 +217,7 @@ function Giveaways({
       );
     }
 
-    if (response.status === 403) {
-      notifications.show({
-        title: 'Error',
-        message: 'You are not authorized to do this. Ask the developer for permission.',
-        color: 'red',
-        icon: <IconX />,
-        withBorder: true,
-        autoClose: 10000
-      });
-      return;
-    }
+    showErrorNotification(response.status);
 
     if (response.status === 200) {
       router.replace(router.asPath);
@@ -253,34 +281,16 @@ function Giveaways({
         id: editId
       },
       {
+        headers: {
+          authorization: cookie.authorization
+        },
         validateStatus: () => {
           return true;
         }
       }
     );
 
-    if (response.status === 403) {
-      notifications.show({
-        title: 'Error',
-        message: 'You are not authorized to do this. Ask the developer for permission.',
-        color: 'red',
-        icon: <IconX />,
-        withBorder: true,
-        autoClose: 10000
-      });
-      return;
-    }
-    if (response.status === 404) {
-      notifications.show({
-        title: 'Error',
-        message: 'Giveaway not found. Notify the developer.',
-        color: 'red',
-        icon: <IconX />,
-        withBorder: true,
-        autoClose: 10000
-      });
-      return;
-    }
+    showErrorNotification(response.status);
 
     if (response.status === 200) {
       router.replace(router.asPath);
@@ -342,7 +352,7 @@ function Giveaways({
                       <td>{giveaway.brand}</td>
                       <td>${giveaway.value.toLocaleString('en-US')}</td>
                       <td>
-                        {giveaway.entries}/{giveaway.maxEntries}
+                        {giveaway.entries.length}/{giveaway.maxEntries}
                       </td>
                       <td>
                         {dateFormat(giveaway.timestampEnd, 'yyyy-mm-dd HH:MM:ss')} (in{' '}
@@ -393,7 +403,7 @@ function Giveaways({
                       <td>{giveaway.brand}</td>
                       <td>${giveaway.value}</td>
                       <td>
-                        {giveaway.entries}/{giveaway.maxEntries}
+                        {giveaway.entries.length}/{giveaway.maxEntries}
                       </td>
                       <td>{new Date(giveaway.timestampEnd).toLocaleString()}</td>
                       <td>{giveaway.winner}</td>

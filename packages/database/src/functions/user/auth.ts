@@ -1,32 +1,7 @@
 import bcrypt from 'bcrypt';
 
-import { prisma } from '../client';
-import { getUserByEmail, getUserByUsername } from './user';
-
-/**
- * Tries to login a user with their username.
- * @param username The username provided.
- * @param password The password provided.
- * @returns Returns a user object if the login was successful, `false` otherwise.
- */
-export async function tryLoginWithUsername(username: string, password: string) {
-  // Check if the user exists.
-  const user = await getUserByUsername(username);
-  if (!user) {
-    return null;
-  }
-
-  // Check if password matches.
-  const success = await bcrypt.compare(password, user.password);
-  if (!success) {
-    return null;
-  }
-
-  // Don't send the password hash to the client.
-  user.password = undefined as any;
-
-  return user;
-}
+import { prisma } from '../../client';
+import { getUserByEmail } from './fetch';
 
 /**
  * Tries to login a user with their email.
@@ -59,7 +34,9 @@ export async function tryLoginWithEmail(email: string, password: string) {
  * @returns True if the authorization is valid, false otherwise.
  */
 export async function validateAuthorization(authorization: string): Promise<boolean> {
-  const user = prisma.user.findUnique({ where: { apiKey: authorization } });
+  const user = await prisma.user.findUnique({
+    where: { apiKey: authorization }
+  });
 
   return user !== null;
 }
